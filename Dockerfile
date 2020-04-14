@@ -14,6 +14,7 @@
 
 # Use the latest stable golang 1.x to compile to a binary
 FROM golang:1 as build
+ENV CGO_ENABLED 0
 
 ARG VERSION="1.17-dev"
 
@@ -21,9 +22,10 @@ WORKDIR /go/src/cloudsql-proxy
 COPY . .
 
 RUN go get ./...
-RUN go build -ldflags "-X 'main.versionString=$VERSION'" -o cloud_sql_proxy ./cmd/cloud_sql_proxy
+RUN go build -gcflags "all=-N -l" -ldflags "-X 'main.versionString=$VERSION'" -o cloud_sql_proxy ./cmd/cloud_sql_proxy
+RUN go get github.com/go-delve/delve/cmd/dlv
 
 # Final Stage
-FROM gcr.io/distroless/base-debian10:nonroot
-COPY --from=build --chown=nonroot /go/src/cloudsql-proxy/cloud_sql_proxy /cloud_sql_proxy
-USER nonroot
+# FROM gcr.io/distroless/base-debian10:debug
+# COPY --from=build /go/src/cloudsql-proxy/cloud_sql_proxy /cloud_sql_proxy
+# COPY --from=build /go/bin/dlv /
